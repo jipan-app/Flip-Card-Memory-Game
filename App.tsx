@@ -17,7 +17,25 @@ const getGridClass = (totalCards: number) => {
 
 const App: React.FC = () => {
   // State
-  const [levels, setLevels] = useState<{normal: number, infinite: number}>({ normal: 1, infinite: 1 });
+  // Initialize levels directly from storage to prevent overwriting on initial render
+  const [levels, setLevels] = useState<{normal: number, infinite: number}>(() => {
+    try {
+      const savedLevels = localStorage.getItem(LEVELS_STORAGE_KEY);
+      if (savedLevels) {
+        return JSON.parse(savedLevels);
+      }
+      // Legacy fallback
+      const oldLevel = localStorage.getItem('neon_memory_level');
+      if (oldLevel) {
+        const lvl = parseInt(oldLevel, 10);
+        return { normal: lvl, infinite: lvl };
+      }
+    } catch (e) {
+      console.error("Failed to parse levels from storage", e);
+    }
+    return { normal: 1, infinite: 1 };
+  });
+
   const [cards, setCards] = useState<CardType[]>([]);
   const [flippedCards, setFlippedCards] = useState<CardType[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<number>(0);
@@ -36,26 +54,7 @@ const App: React.FC = () => {
   const [targetSkipLevel, setTargetSkipLevel] = useState<string>('');
   const [skipError, setSkipError] = useState<string>('');
 
-  // Load levels from storage
-  useEffect(() => {
-    const savedLevels = localStorage.getItem(LEVELS_STORAGE_KEY);
-    if (savedLevels) {
-      try {
-        setLevels(JSON.parse(savedLevels));
-      } catch (e) {
-        console.error("Failed to parse levels", e);
-      }
-    } else {
-      // Legacy fallback
-      const oldLevel = localStorage.getItem('neon_memory_level');
-      if (oldLevel) {
-        const lvl = parseInt(oldLevel, 10);
-        setLevels({ normal: lvl, infinite: lvl });
-      }
-    }
-  }, []);
-
-  // Save levels to storage
+  // Save levels to storage whenever they change
   useEffect(() => {
     localStorage.setItem(LEVELS_STORAGE_KEY, JSON.stringify(levels));
   }, [levels]);
